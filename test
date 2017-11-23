@@ -1,0 +1,74 @@
+from __future__ import print_function
+
+import boto3
+import json
+import logging
+import os
+
+from urllib2 import Request, urlopen, URLError, HTTPError
+
+SLACK_CHANNEL = "#general"
+HOOK_URL = "https://hooks.slack.com/services/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T"
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def lambda_handler(event, context):
+    message =  str(event['Records'][0]['userIdentity'])
+    json.dumps(message)
+    slack_message = {
+        'channel': SLACK_CHANNEL,
+        'text': message
+    }
+    logger.info(str(slack_message))
+    
+    req = Request(HOOK_URL, json.dumps(slack_message))
+    try:
+        response = urlopen(req)
+        response.read()
+        logger.info("Message posted to %s", slack_message['channel'])
+    except HTTPError as e:
+        logger.error("Request failed: %d %s", e.code, e.reason)
+    except URLError as e:
+        logger.error("Server connection failed: %s", e.reason)
+
+#Sample json
+'''
+{
+  "Records": [
+    {
+      "eventVersion": "1.05",
+      "userIdentity": {
+        "type": "IAMUser",
+        "principalId": "AIDACKCEVSQ6C2EXAMPLE",
+        "arn": "arn:aws:iam::111122223333:user/JaneDoe",
+        "accountId": "111122223333",
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "userName": "JaneDoe",
+        "sessionContext": {
+          "attributes": {
+            "mfaAuthenticated": "false",
+            "creationDate": "2016-11-21T07:06:15Z"
+          }
+        },
+        "invokedBy": "AWS Internal"
+      },
+      "eventTime": "2016-11-21T07:06:28Z",
+      "eventSource": "health.amazonaws.com",
+      "eventName": "DescribeEntityAggregates",
+      "awsRegion": "us-east-1",
+      "sourceIPAddress": "203.0.113.0",
+      "userAgent": "AWS Internal",
+      "requestParameters": {
+        "eventArns": [
+          "arn:aws:health:us-east-1::event/EBS_LOST_VOLUME"
+        ]
+      },
+      "responseElements": null,
+      "requestID": "05b299bc-afb9-11e6-8ef4-c34387f40bd4",
+      "eventID": "e4deb9dc-dbc2-4bdb-8515-73e8abcbc29b",
+      "eventType": "AwsApiCall",
+      "recipientAccountId": "111122223333"
+    }
+  ]
+}
+'''
